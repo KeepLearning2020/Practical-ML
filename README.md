@@ -1,6 +1,6 @@
 # Practical-ML
 
-This project is for Cause
+This project is for Coursera Practical Machine Learning week 4 assignment. The purpose is to predict the manner in which they did the exercise based on the collected personal activity.
 
 Three files are included:
 
