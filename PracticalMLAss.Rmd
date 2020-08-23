@@ -12,18 +12,20 @@ knitr::opts_chunk$set(echo = TRUE)
 ## Overview
 
 This project is for Coursera Practical Machine Learning week 4 assignment. The purpose is predict the manner in which they did the excercise based on the collected personal activity. 
-Three methods are applied on the testing data, including:
+Three methods are attempted, including:
 
 - Random Forest
 - Generalized Boosted Model
 - Decision Tree
 
-Based on the invetigation resutl, first two methods have better accurate result, with accuracy as 99% and 96% respectively. The Decision Tree has worst result as accuracy 76%. 
+The source large training data set is split to two parts, 70% of them are used for training, and left 30% are used for testing to check the accuracy. The soure testing data set is used for validation.
 
-When three methods are used to do prediction on validation data, it results the first methods get same predition list. With DT method, about 5 items in total 20 records in validation data have different prediction with DT method.
+Based on the invetigation by applying three methods on training and testing data, first two methods have better accuray, with accuracy as 99% and 96% respectively. The Decision Tree has worst result as accuracy 76%. 
+
+When three methods are used to do prediction on validation data, it results the first methods get same predition list. With DT method, about 5 items in total 20 records in validation data have different prediction from the previous two methods.
 
 
-## Load Data and Clean
+## Load Data and Clean Data
 
 ### Load Data
 In order to save time, the data set files are downloaded and stored locally.
@@ -46,7 +48,7 @@ dim(testingData)
 ```
 
 ### Create partition with training data set
-
+Large training data set is split to two parts, 70% used for training and 30% used for testing. The source testing data set is used for final validation.
 
 ```{r}
 library(caret)
@@ -202,12 +204,12 @@ plot(confGBM$table, col=confGBM$byClass,
 ```
 
 ### Summary of diffent method
-Based on previous test result, random Forest has best accuracy on testing data with accuracy 99%. The Generalized Boosted Model has acuracy as 96%. The Decision Tree has worst result as 76%. 
+Based on previous investigation result, Random Forest has best accuracy on testing data with accuracy 99%. The Generalized Boosted Model has acuracy as 96%. The Decision Tree has worst result as 76%. 
 
 
 ## Prediction on validation data
 
-Three methods are attempted to apply on the validation data, it shows the RF and GBM result in same prediction. About 5 items of DT method result are different from previous two methods.
+Three methods are attempted to apply on the validation data, it shows the RF and GBM result in same prediction. 5 items of total 20 records from DT method result are different from previous two methods.
 
 
 ```{r}
