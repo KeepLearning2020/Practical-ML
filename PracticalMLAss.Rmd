@@ -1,0 +1,231 @@
+---
+title: "Practical ML"
+author: "Li Lv"
+date: "Aug.19 2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Overview
+
+This project is for Coursera Practical Machine Learning week 4 assignment. The purpose is predict the manner in which they did the excercise based on the collected personal activity. 
+Three methods are applied on the testing data, including:
+
+- Random Forest
+- Generalized Boosted Model
+- Decision Tree
+
+Based on the invetigation resutl, first two methods have better accurate result, with accuracy as 99% and 96% respectively. The Decision Tree has worst result as accuracy 76%. 
+
+When three methods are used to do prediction on validation data, it results the first methods get same predition list. With DT method, about 5 items in total 20 records in validation data have different prediction with DT method.
+
+
+## Load Data and Clean
+
+### Load Data
+In order to save time, the data set files are downloaded and stored locally.
+
+```{r}
+#urlTrain <- "http://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+#urtTest <- "http://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+
+#trainFile <- "pml-training.csv"
+#testFile <- "pml-testing.csv"
+#download.file(urlTrain, trainFile)
+#download.file(urlTest, testFile)
+
+trainingData <- read.csv("pml-training.csv")
+testingData <- read.csv("pml-testing.csv")
+
+dim(trainingData)
+dim(testingData)
+
+```
+
+### Create partition with training data set
+
+
+```{r}
+library(caret)
+set.seed(112233)
+inTrain <- createDataPartition(trainingData$classe, p=0.7, list=FALSE)
+trainSet <- trainingData[inTrain, ]
+testSet <- trainingData[-inTrain, ]
+dim(trainSet)
+dim(testSet)
+
+```
+
+
+### Clean Data
+
+- Remove variance with near zero value
+
+```{r}
+nzvData <- nearZeroVar(trainingData)
+trainSet <- trainSet[, -nzvData]
+testSet <- testSet[, -nzvData]
+dim(trainSet)
+dim(testSet)
+
+```
+
+- Remove variance with too many NA
+```{r}
+varNA <- apply(trainSet, 2, function(x) mean(is.na(x))) > 0.95
+trainSet <- trainSet[, varNA == FALSE]
+testSet <- testSet[, varNA == FALSE]
+
+dim(trainSet)
+dim(testSet)
+```
+
+- Remover unrelevant variants
+
+```{r}
+colnames(trainSet)
+```
+It looks the first 6 variants about idenity and timestamp are not relevant to the measurement. 
+ [1] "X"                    "user_name"            "raw_timestamp_part_1"
+ [4] "raw_timestamp_part_2" "cvtd_timestamp"       "num_window" 
+ 
+The first 6 variants are removed.
+
+```{r}
+trainSet <- trainSet[, -(1:6)]
+testSet <- testSet[, -(1:6)]
+dim(trainSet)
+dim(testSet)
+colnames(trainSet)
+```
+
+## Model Building
+
+Three model types are attempted to find out the one with better out-of-sample accuracy.
+
+- Random Forest
+- Generallized Boosted model
+- Decision Tree
+
+
+### Random Forest
+Model Fit:
+Since it is slow to run train on big data set, so the model fit result is recorded in one file.
+
+```{r}
+set.seed(112345)
+#conRF <- trainControl(method="cv", number=3, verboseIter = FALSE)
+#modRF <- train(classe ~ ., data=trainSet, method="rf", trControl = conRF)
+#save(modRF, file='./ModelRF.RData')
+load("ModelRF.RData")
+#modRF$finalModel
+```
+
+
+Predict on testing data:
+```{r}
+preRF <- predict(modRF, newdata=testSet)
+testSet$classe <- as.factor(testSet$classe)
+confRF <- confusionMatrix(preRF, testSet$classe)
+confRF
+```
+
+Plot the result:
+```{r}
+plot(confRF$table, col=confRF$byClass, 
+     main=paste("Random Forest Accuracy =", 
+                round(confRF$overall['Accuracy'],4)))
+
+```
+
+### Decision Tree
+
+Decision Tree modle fit:
+
+```{r}
+library(rpart)
+library(rpart.plot)
+library(rattle)
+set.seed(212345)
+modDT <- rpart(classe ~ ., data=trainSet, method="class")
+save(modDT, file='./ModelDT.RData')
+
+fancyRpartPlot(modDT)
+```
+
+Predict Decision Tree result on testing data:
+```{r}
+preDT <- predict(modDT, newdata=testSet, type="class")
+confDT <- confusionMatrix(preDT, testSet$classe)
+confDT
+```
+
+Plot confusion matrix result:
+```{r}
+plot(confDT$table, col=confDT$byClass, 
+     main=paste("Decision Tree Accuracy =", 
+                round(confDT$overall['Accuracy'],4)))
+
+```
+
+
+### Generalized Boosted Model
+GBM modle fit:
+Since it is slow to run train on big data set, so the model fit result is recorded in one file.
+
+```{r}
+set.seed(312345)
+#conGBM <- trainControl(method="repeatedcv", number=5, repeats=1)
+#modGBM <- train(classe ~ ., data=trainSet, method="gbm", 
+#                trControl = conGBM, verbose=FALSE)
+#save(modGBM, file='./ModelGBM.RData')
+load("ModelGBM.RData")
+#modGBM$finalModel
+```
+
+Predict on testing data:
+```{r}
+preGBM <- predict(modGBM, newdata=testSet)
+confGBM <- confusionMatrix(preGBM, testSet$classe)
+confGBM
+```
+
+Plot confusion matrix result:
+```{r}
+plot(confGBM$table, col=confGBM$byClass, 
+     main=paste("GBM Accuracy =", 
+                round(confGBM$overall['Accuracy'],4)))
+
+```
+
+### Summary of diffent method
+Based on previous test result, random Forest has best accuracy on testing data with accuracy 99%. The Generalized Boosted Model has acuracy as 96%. The Decision Tree has worst result as 76%. 
+
+
+## Prediction on validation data
+
+Three methods are attempted to apply on the validation data, it shows the RF and GBM result in same prediction. About 5 items of DT method result are different from previous two methods.
+
+
+```{r}
+preRFVal <- predict(modRF, newdata=testingData)
+preGBMVal <- predict(modGBM, newdata=testingData)
+preDTVal <- predict(modDT, newdata=testingData)
+
+preDTVal <- apply(preDTVal, 1, function(x) colnames(preDTVal)[which.max(x)])
+
+valResult <- data.frame(problem_id=testingData$problem_id, 
+                        predbyRF=preRFVal,
+                        predbyGBM=preGBMVal,
+                        GBMvsRF = (preRFVal==preGBMVal),
+                        predbyDT=preDTVal,
+                        DTvsRF = (preRFVal==preDTVal))
+valResult
+
+```
+
+
+
